@@ -1,0 +1,113 @@
+import { useState } from 'react'
+import { useLang } from '../../i18n/LanguageContext'
+import { useData } from '../../context/DataContext'
+import { MultiLangInput } from '../../components/admin/MultiLangField'
+import ImageUploadField from '../../components/admin/ImageUploadField'
+import { DAY_ORDER } from '../../utils/pharmacyStatus'
+
+const DAY_LABEL = { sun: 'Sunday', mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday' }
+
+export default function AdminPharmacyInfo() {
+  const { t } = useLang()
+  const { pharmacyInfo, updatePharmacyInfo } = useData()
+  const [form, setForm] = useState(pharmacyInfo)
+  const [saved, setSaved] = useState(false)
+
+  function update(key, value) {
+    setForm((f) => ({ ...f, [key]: value }))
+  }
+  function updateHours(day, patch) {
+    setForm((f) => ({ ...f, openingHours: { ...f.openingHours, [day]: { ...f.openingHours[day], ...patch } } }))
+  }
+  function updateImage(index, value) {
+    setForm((f) => {
+      const images = [...f.images]
+      images[index] = value
+      return { ...f, images }
+    })
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    updatePharmacyInfo(form)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  return (
+    <div>
+      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 22 }}>{t('admin.pharmacyInfo')}</h1>
+
+      <form onSubmit={handleSubmit} className="flex-col gap-3">
+        <div className="card card-pad">
+          <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 16 }}>{t('about.title')}</h3>
+          <MultiLangInput label={t('common.name')} value={form.name} onChange={(v) => update('name', v)} />
+          <MultiLangInput label="Slogan" value={form.slogan} onChange={(v) => update('slogan', v)} />
+          <MultiLangInput label="Description" value={form.description} onChange={(v) => update('description', v)} textarea />
+          <div className="field">
+            <label>Logo initial (1 letter)</label>
+            <input className="input" maxLength={2} style={{ maxWidth: 120 }} value={form.logoInitial} onChange={(e) => update('logoInitial', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="card card-pad">
+          <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 16 }}>{t('contact.title')}</h3>
+          <MultiLangInput label={t('contact.address')} value={form.address} onChange={(v) => update('address', v)} />
+          <MultiLangInput label={t('about.cityLabel')} value={form.city} onChange={(v) => update('city', v)} />
+          <div className="grid grid-2">
+            <div className="field">
+              <label>{t('common.phone')}</label>
+              <input className="input" value={form.phone} onChange={(e) => update('phone', e.target.value)} />
+            </div>
+            <div className="field">
+              <label>WhatsApp</label>
+              <input className="input" value={form.whatsapp} onChange={(e) => update('whatsapp', e.target.value)} />
+            </div>
+          </div>
+          <div className="field">
+            <label>{t('common.email')}</label>
+            <input className="input" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Google Maps embed URL</label>
+            <input className="input" value={form.mapUrl} onChange={(e) => update('mapUrl', e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Google Maps link (directions)</label>
+            <input className="input" value={form.mapLink} onChange={(e) => update('mapLink', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="card card-pad">
+          <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 16 }}>{t('status.hours')}</h3>
+          {DAY_ORDER.map((d) => (
+            <div key={d} className="flex-center gap-3" style={{ justifyContent: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+              <span style={{ width: 90, fontWeight: 700, fontSize: 13.5 }}>{DAY_LABEL[d]}</span>
+              <label className="flex-center gap-1" style={{ fontSize: 12.5 }}>
+                <input type="checkbox" checked={!form.openingHours[d].closed} onChange={(e) => updateHours(d, { closed: !e.target.checked })} />
+                {t('common.active')}
+              </label>
+              {!form.openingHours[d].closed && (
+                <>
+                  <input type="time" className="input" style={{ width: 130 }} value={form.openingHours[d].open} onChange={(e) => updateHours(d, { open: e.target.value })} />
+                  <span className="text-muted">—</span>
+                  <input type="time" className="input" style={{ width: 130 }} value={form.openingHours[d].close} onChange={(e) => updateHours(d, { close: e.target.value })} />
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="card card-pad">
+          <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 16 }}>Photos</h3>
+          {form.images.map((img, i) => (
+            <ImageUploadField key={i} label={`صورة ${i + 1}`} value={img} onChange={(v) => updateImage(i, v)} />
+          ))}
+        </div>
+
+        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>{t('common.save')}</button>
+        {saved && <span className="badge badge-success" style={{ alignSelf: 'flex-start' }}>✓ {t('admin.saved')}</span>}
+      </form>
+    </div>
+  )
+}
