@@ -15,6 +15,7 @@ export default function MedicineDetail() {
   if (!medicine) return <Navigate to="/medicines" replace />
 
   const category = categories.find((c) => c.id === medicine.categoryId)
+  const info = medicine.info || {}
 
   const rows = [
     { label: t('medicines.activeIngredient'), value: tf(medicine.activeIngredient) },
@@ -24,12 +25,12 @@ export default function MedicineDetail() {
   ]
 
   const sections = [
-    { title: t('medicines.generalInfo'), text: tf(medicine.info.general) },
-    { title: t('medicines.usage'), text: tf(medicine.info.usage) },
-    { title: t('medicines.howToUse'), text: tf(medicine.info.howToUse) },
-    { title: t('medicines.warnings'), text: tf(medicine.info.warnings) },
-    { title: t('medicines.contraindications'), text: tf(medicine.info.contraindications) },
-    { title: t('medicines.sideEffects'), text: tf(medicine.info.sideEffects) },
+    { title: t('medicines.generalInfo'), text: tf(info.general) },
+    { title: t('medicines.usage'), text: tf(info.usage) },
+    { title: t('medicines.howToUse'), text: tf(info.howToUse) },
+    { title: t('medicines.warnings'), text: tf(info.warnings) },
+    { title: t('medicines.contraindications'), text: tf(info.contraindications) },
+    { title: t('medicines.sideEffects'), text: tf(info.sideEffects) },
   ]
 
   return (
@@ -47,7 +48,7 @@ export default function MedicineDetail() {
               <AvailabilityBadge status={medicine.availability} />
             </div>
             <h1 style={{ fontSize: 30, fontWeight: 800, margin: '0 0 10px' }}>{medicine.name}</h1>
-            <p className="text-secondary" style={{ marginBottom: 22 }}>{tf(medicine.info.general)}</p>
+            <p className="text-secondary" style={{ marginBottom: 22 }}>{tf(info.general)}</p>
             <div className="card card-pad" style={{ marginBottom: 22 }}>
               {rows.map((r) => (
                 <div key={r.label} className="flex-between" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>

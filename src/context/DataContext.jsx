@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 const DataContext = createContext(null)
@@ -64,6 +64,10 @@ export function DataProvider({ children }) {
   const [data, setData] = useState(EMPTY_DATA)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const dataRef = useRef(data)
+  useEffect(() => {
+    dataRef.current = data
+  }, [data])
 
   const refresh = useCallback(async () => {
     try {
@@ -116,27 +120,22 @@ export function DataProvider({ children }) {
         setData((prev) => ({ ...prev, [key]: prev[key].filter((it) => it.id !== id) }))
       },
       toggleActive: async (id) => {
-        setData((prev) => {
-          const current = prev[key].find((it) => it.id === id)
-          if (!current) return prev
-          supabase
-            .from(table)
-            .update({ active: !current.active })
-            .eq('id', id)
-            .select()
-            .single()
-            .then(({ data: updated, error: err }) => {
-              if (err) {
-                console.error(err)
-                return
-              }
-              setData((p2) => ({
-                ...p2,
-                [key]: p2[key].map((it) => (it.id === id ? updated : it)),
-              }))
-            })
-          return prev
-        })
+        const current = dataRef.current[key].find((it) => it.id === id)
+        if (!current) return
+        const { data: updated, error: err } = await supabase
+          .from(table)
+          .update({ active: !current.active })
+          .eq('id', id)
+          .select()
+          .single()
+        if (err) {
+          console.error(err)
+          return
+        }
+        setData((prev) => ({
+          ...prev,
+          [key]: prev[key].map((it) => (it.id === id ? updated : it)),
+        }))
       },
     }),
     []

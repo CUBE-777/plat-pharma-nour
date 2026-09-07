@@ -31,7 +31,10 @@ export function MultiLangInput({ label, value, onChange, textarea = false }) {
 export function MultiLangListInput({ label, value, onChange }) {
   const val = value || { ar: [], fr: [], en: [] }
   function update(lang, text) {
-    onChange({ ...val, [lang]: text.split('\n').filter((l) => l.trim() !== '') })
+    // نحتفظ بالأسطر كما هي أثناء الكتابة (بدون فلترة الأسطر الفارغة)، وإلا كان السطر الفارغ
+    // اللي كيتزاد بضغطة Enter كيتحذف مباشرة ويولي المستخدم ما قادش يزيد بند جديد.
+    // الفلترة ديال الأسطر الفارغة كتوقع عند الحفظ (submit) وعند العرض، ماشي هنا.
+    onChange({ ...val, [lang]: text.split('\n') })
   }
   return (
     <div className="field">

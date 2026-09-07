@@ -260,12 +260,6 @@ input, textarea, select { font-family: inherit; }
 }
 .pulse { animation: pulseGlow 2.4s ease-in-out infinite; }
 
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-[dir='rtl'] @keyframes marquee {}
-
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; }
 

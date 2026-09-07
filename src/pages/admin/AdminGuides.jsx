@@ -42,10 +42,20 @@ export default function AdminGuides() {
     })
     setModalOpen(true)
   }
+  function cleanList(list) {
+    const src = list || EMPTY_LIST
+    return {
+      ar: (src.ar || []).map((l) => l.trim()).filter(Boolean),
+      fr: (src.fr || []).map((l) => l.trim()).filter(Boolean),
+      en: (src.en || []).map((l) => l.trim()).filter(Boolean),
+    }
+  }
+
   function handleSubmit(e) {
     e.preventDefault()
-    if (editing) healthGuidesCrud.update(editing.id, form)
-    else healthGuidesCrud.add(form)
+    const payload = { ...form, keyPoints: cleanList(form.keyPoints), tips: cleanList(form.tips) }
+    if (editing) healthGuidesCrud.update(editing.id, payload)
+    else healthGuidesCrud.add(payload)
     setModalOpen(false)
   }
   function handleDelete(id) {

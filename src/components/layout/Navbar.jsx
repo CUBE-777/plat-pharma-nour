@@ -98,7 +98,7 @@ export default function Navbar() {
               onChange={(e) => setQuery(e.target.value)}
             />
           </form>
-          <button className="icon-btn nav-search-btn" onClick={handleSearch} aria-label={t('common.search')}>🔍</button>
+          <button className="icon-btn nav-search-btn" onClick={() => setMobileOpen(true)} aria-label={t('common.search')}>🔍</button>
           <ThemeToggle />
           <LanguageSwitcher />
           <button

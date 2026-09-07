@@ -3,7 +3,7 @@ import { useLang } from '../../i18n/LanguageContext'
 import { useData } from '../../context/DataContext'
 
 export default function AdminDashboard() {
-  const { t } = useLang()
+  const { t, tf } = useLang()
   const { medicines, services, staff, healthGuides, announcements } = useData()
 
   const stats = [
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
         <div className="flex-col gap-2">
           {announcements.slice(0, 5).map((a) => (
             <div key={a.id} className="flex-between" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 13.5 }}>
-              <span>{a.icon} {a.text.ar}</span>
+              <span>{a.icon} {tf(a.text)}</span>
               <span className={`badge ${a.active ? 'badge-success' : 'badge-neutral'}`}>
                 {a.active ? t('common.active') : t('common.inactive')}
               </span>

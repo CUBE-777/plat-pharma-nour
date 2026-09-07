@@ -34,7 +34,7 @@ export default function HealthGuideDetail() {
           <div className="card card-pad fade-up">
             <div style={{ fontWeight: 800, color: 'var(--accent)', marginBottom: 14, fontSize: 14 }}>{t('guides.keyPoints')}</div>
             <ul style={{ margin: 0, paddingInlineStart: 20, color: 'var(--text-secondary)', lineHeight: 2 }}>
-              {tf(guide.keyPoints).map((point, i) => (
+              {(tf(guide.keyPoints) || []).filter(Boolean).map((point, i) => (
                 <li key={i}>{point}</li>
               ))}
             </ul>
@@ -43,7 +43,7 @@ export default function HealthGuideDetail() {
           <div className="card card-pad fade-up">
             <div style={{ fontWeight: 800, color: 'var(--accent)', marginBottom: 14, fontSize: 14 }}>{t('guides.tips')}</div>
             <ul style={{ margin: 0, paddingInlineStart: 20, color: 'var(--text-secondary)', lineHeight: 2 }}>
-              {tf(guide.tips).map((tip, i) => (
+              {(tf(guide.tips) || []).filter(Boolean).map((tip, i) => (
                 <li key={i}>💡 {tip}</li>
               ))}
             </ul>

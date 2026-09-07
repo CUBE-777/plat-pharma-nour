@@ -50,7 +50,7 @@ export default function AdminMedicines() {
       price: item.price,
       availability: item.availability,
       image: item.image,
-      info: item.info,
+      info: { ...EMPTY.info, ...item.info },
     })
     setModalOpen(true)
   }
