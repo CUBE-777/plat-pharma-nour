@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import * as api from '../services/api'
 
 const DataContext = createContext(null)
 
@@ -14,6 +15,8 @@ const EMPTY_DATA = {
   healthGuides: [],
 }
 
+// جلب كل بيانات الموقع دفعة واحدة، عبر طبقة api.js المركزية (services/api.js)
+// بدل استدعاء supabase مباشرة هنا. النتيجة والسلوك مطابقان 100% للنسخة السابقة.
 async function fetchAll() {
   const [
     pharmacyInfoRes,
@@ -25,14 +28,14 @@ async function fetchAll() {
     guideCategoriesRes,
     healthGuidesRes,
   ] = await Promise.all([
-    supabase.from('pharmacy_info').select('*').eq('id', 1).maybeSingle(),
-    supabase.from('categories').select('*'),
-    supabase.from('medicines').select('*').order('created_at', { ascending: false }),
-    supabase.from('services').select('*').order('created_at', { ascending: false }),
-    supabase.from('staff').select('*').order('created_at', { ascending: false }),
-    supabase.from('announcements').select('*').order('created_at', { ascending: false }),
-    supabase.from('guide_categories').select('*'),
-    supabase.from('health_guides').select('*').order('created_at', { ascending: false }),
+    api.getPharmacyInfo(),
+    api.getCategories(),
+    api.getMedicines(),
+    api.getServices(),
+    api.getStaff(),
+    api.getAnnouncements(),
+    api.getGuideCategories(),
+    api.getHealthGuides(),
   ])
 
   const firstError = [
@@ -159,18 +162,36 @@ export function DataProvider({ children }) {
     return updated
   }, [])
 
-  const value = {
-    ...data,
-    loading,
-    error,
-    refresh,
-    medicinesCrud,
-    servicesCrud,
-    staffCrud,
-    announcementsCrud,
-    healthGuidesCrud,
-    updatePharmacyInfo,
-  }
+  // بدون useMemo هنا، كان يُعاد إنشاء كائن value جديد بمرجع مختلف في كل render
+  // للـ DataProvider، مما يجبر React على إعادة تصيير كل مكون يستهلك useData()
+  // حتى لو لم تتغير أي بيانات فعلية (Unnecessary Re-renders). الآن value يبقى
+  // بنفس المرجع طالما لم تتغير أي من هذه القيم تحديدًا.
+  const value = useMemo(
+    () => ({
+      ...data,
+      loading,
+      error,
+      refresh,
+      medicinesCrud,
+      servicesCrud,
+      staffCrud,
+      announcementsCrud,
+      healthGuidesCrud,
+      updatePharmacyInfo,
+    }),
+    [
+      data,
+      loading,
+      error,
+      refresh,
+      medicinesCrud,
+      servicesCrud,
+      staffCrud,
+      announcementsCrud,
+      healthGuidesCrud,
+      updatePharmacyInfo,
+    ]
+  )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
 }
