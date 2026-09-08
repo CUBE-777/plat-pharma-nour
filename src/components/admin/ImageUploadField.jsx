@@ -3,14 +3,37 @@ import { supabase } from '../../lib/supabaseClient'
 
 // حقل صورة: يسمح بلصق رابط URL يدويًا، أو رفع ملف مباشرة لـ Supabase Storage
 // (bucket: images) واستعمال الرابط العمومي ديالو تلقائيًا.
+
+// أنواع الصور المسموحة وحجمها الأقصى (يجب أن تطابق سياسات storage في security_patch.sql)
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 // 2 ميجابايت
+
 export default function ImageUploadField({ label, value, onChange }) {
   const inputRef = useRef(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
 
+  function validateFile(file) {
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return 'صيغة الملف غير مدعومة. الصيغ المسموحة فقط: JPEG, PNG, WebP.'
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return 'حجم الملف كبير جدًا. الحد الأقصى المسموح هو 2 ميجابايت.'
+    }
+    return ''
+  }
+
   async function handleFileChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const validationError = validateFile(file)
+    if (validationError) {
+      setUploadError(validationError)
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
+
     setUploading(true)
     setUploadError('')
     try {
@@ -61,7 +84,7 @@ export default function ImageUploadField({ label, value, onChange }) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={ALLOWED_MIME_TYPES.join(',')}
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
