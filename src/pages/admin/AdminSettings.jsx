@@ -1,16 +1,18 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useLang } from '../../i18n/LanguageContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useData } from '../../context/DataContext'
 import { useAuth } from '../../context/AuthContext'
 
 export default function AdminSettings() {
-  const { t, lang, setLang, languages } = useLang()
+  const { t, lang, setLang, languages, dir } = useLang()
   const { theme, setTheme } = useTheme()
   const { pharmacyInfo } = useData()
   const { changePassword, user } = useAuth()
 
   const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [pwSaved, setPwSaved] = useState(false)
   const [pwError, setPwError] = useState('')
   const [pwSubmitting, setPwSubmitting] = useState(false)
@@ -19,17 +21,22 @@ export default function AdminSettings() {
     e.preventDefault()
     setPwError('')
     if (newPassword.length < 6) {
-      setPwError('كلمة المرور يجب أن تكون 6 خانات على الأقل.')
+      setPwError(t('admin.passwordLengthError'))
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError(t('admin.passwordMismatchError'))
       return
     }
     setPwSubmitting(true)
     try {
       await changePassword(newPassword)
       setNewPassword('')
+      setConfirmPassword('')
       setPwSaved(true)
       setTimeout(() => setPwSaved(false), 2500)
     } catch (err) {
-      setPwError(err.message || 'حدث خطأ، حاول مرة أخرى.')
+      setPwError(err.message || t('common.genericError'))
     } finally {
       setPwSubmitting(false)
     }
@@ -71,30 +78,42 @@ export default function AdminSettings() {
           <p className="text-secondary" style={{ fontSize: 13, lineHeight: 1.8, margin: 0 }}>
             {pharmacyInfo?.phone} · {pharmacyInfo?.email}
           </p>
-          <p className="text-muted" style={{ fontSize: 12, marginTop: 8 }}>
-            {t('admin.pharmacyInfo')} →
-          </p>
+          <Link to="/admin/pharmacy-info" className="text-muted" style={{ fontSize: 12, marginTop: 8, display: 'inline-block' }}>
+            {t('admin.pharmacyInfo')} {dir === 'rtl' ? '←' : '→'}
+          </Link>
         </div>
 
         <div className="card card-pad">
-          <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 6 }}>كلمة مرور الإدارة</h3>
+          <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 6 }}>{t('admin.adminPassword')}</h3>
           <p className="text-muted" style={{ fontSize: 12, marginBottom: 14 }}>
-            الحساب الحالي: {user?.email}
+            {t('admin.currentAccount')}: {user?.email}
           </p>
           <form onSubmit={handleChangePassword} className="flex-col gap-2">
             <div className="field">
-              <label>كلمة مرور جديدة</label>
+              <label>{t('admin.newPassword')}</label>
               <input
                 className="input"
                 type="password"
+                required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="••••••••"
               />
             </div>
+            <div className="field">
+              <label>{t('admin.confirmPassword')}</label>
+              <input
+                className="input"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
             {pwError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600 }}>{pwError}</p>}
             <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }} disabled={pwSubmitting}>
-              {pwSubmitting ? '...' : t('common.save')}
+              {pwSubmitting ? t('common.saving') : t('common.save')}
             </button>
             {pwSaved && <span className="badge badge-success" style={{ alignSelf: 'flex-start' }}>✓ {t('admin.saved')}</span>}
           </form>

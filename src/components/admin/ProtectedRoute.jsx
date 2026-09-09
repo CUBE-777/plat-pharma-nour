@@ -30,13 +30,42 @@ function AuthCheckingSpinner() {
 }
 
 export default function ProtectedRoute() {
-  const { isAuthed, checking } = useAuth()
+  const { isAuthed, isAdmin, checking, logout } = useAuth()
 
   // بدل عرض شاشة فارغة (null)، نعرض مؤشر تحميل واضح للمستخدم
   if (checking) return <AuthCheckingSpinner />
 
   // الجلسة غير صالحة أو غير موجودة -> توجيه سلس لصفحة تسجيل الدخول
   if (!isAuthed) return <Navigate to="/admin" replace />
+
+  // مسجل دخول لكن ليس مديراً مصرحاً به في جدول admins
+  if (!isAdmin) {
+    return (
+      <div
+        className="flex-center"
+        style={{
+          minHeight: '100vh',
+          flexDirection: 'column',
+          gap: 16,
+          padding: 24,
+          textAlign: 'center',
+          background: 'var(--bg)',
+          color: 'var(--text-primary)',
+        }}
+      >
+        <span style={{ fontSize: 44 }}>🚫</span>
+        <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>غير مصرح بالدخول للإدارة</h2>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 440, lineHeight: 1.7, margin: 0 }}>
+          تم تسجيل دخولك بنجاح، ولكن هذا الحساب ليس لديه صلاحيات إدارية (غير مسجل في قائمة المدراء المصرح لهم).
+        </p>
+        <div className="flex-center gap-2">
+          <button className="btn btn-secondary btn-sm" onClick={logout}>
+            تسجيل الخروج
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return <Outlet />
 }

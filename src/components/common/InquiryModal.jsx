@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Modal from './Modal'
 import { useLang } from '../../i18n/LanguageContext'
 import { useData } from '../../context/DataContext'
@@ -11,6 +11,14 @@ export default function InquiryModal({ open, onClose, defaultMedicineName = '' }
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      setForm((f) => ({ ...f, medicineName: defaultMedicineName || '' }))
+      setSent(false)
+      setError('')
+    }
+  }, [open, defaultMedicineName])
 
   function update(key, val) {
     setForm((f) => ({ ...f, [key]: val }))

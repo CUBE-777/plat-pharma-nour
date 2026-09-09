@@ -11,8 +11,6 @@
 // مباشرة من خارج لوحة الإدارة.
 // ================================================================
 
-import { serve } from 'https://deno.land/std@0.203.0/http/server.ts'
-
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -20,7 +18,7 @@ const CORS_HEADERS = {
 
 const SUPPORTED_LANGS = new Set(['ar', 'fr', 'en'])
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // طلبات Preflight الخاصة بـ CORS من المتصفح
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
@@ -47,7 +45,7 @@ serve(async (req) => {
 
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
       safeText
-    )}&langpair=${source}|${target}`
+    )}&langpair=${source}|${target}&de=contact@alnour-pharmacy.ma`
 
     const res = await fetch(url)
     const data = await res.json()

@@ -136,9 +136,34 @@ insert into public.pharmacy_info (
 on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------
+-- جدول المدراء (admins) ودالة التحقق is_admin()
+-- ----------------------------------------------------------------
+create table if not exists public.admins (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.admins enable row level security;
+
+create policy "self read admins" on public.admins for select
+  using (auth.uid() = user_id);
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.admins where user_id = auth.uid()
+  );
+$$;
+
+-- ----------------------------------------------------------------
 -- تفعيل Row Level Security (RLS) على كل الجداول
 -- القاعدة: الجميع يقدر "يقرأ" (الموقع عمومي)، وغير المسؤول (Admin)
--- المسجّل دخوله عبر Supabase Auth هو اللي يقدر يضيف/يعدّل/يحذف.
+-- المسجّل دخوله والموجود في جدول admins هو اللي يقدر يضيف/يعدّل/يحذف.
 -- ----------------------------------------------------------------
 
 alter table public.categories enable row level security;
@@ -161,51 +186,58 @@ create policy "public read announcements" on public.announcements for select usi
 create policy "public read health_guides" on public.health_guides for select using (true);
 create policy "public read pharmacy_info" on public.pharmacy_info for select using (true);
 
--- الكتابة (insert/update/delete) فقط لمستخدم مسجّل دخوله (Admin)
+-- الكتابة (insert/update/delete) فقط للمدير المعرّف في جدول admins
 create policy "admin write medicines" on public.medicines for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 create policy "admin write services" on public.services for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 create policy "admin write staff" on public.staff for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 create policy "admin write announcements" on public.announcements for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 create policy "admin write health_guides" on public.health_guides for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 create policy "admin write pharmacy_info" on public.pharmacy_info for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 create policy "admin write categories" on public.categories for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 create policy "admin write guide_categories" on public.guide_categories for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 
 -- messages: أي زائر (حتى غير المسجّل) يقدر "يكتب" رسالة (insert) عبر
--- نماذج الموقع، لكن القراءة/التعديل/الحذف محصورة بالإدارة فقط — حماية
--- لخصوصية بيانات الزوار (هاتف/بريد/رسالة).
+-- نماذج الموقع، لكن القراءة/التعديل/الحذف محصورة بالإدارة المصرحة فقط.
 create policy "public insert messages" on public.messages for insert with check (true);
 create policy "admin read messages" on public.messages for select
-  using (auth.role() = 'authenticated');
+  using (public.is_admin());
 create policy "admin update messages" on public.messages for update
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 create policy "admin delete messages" on public.messages for delete
-  using (auth.role() = 'authenticated');
+  using (public.is_admin());
 
 -- ----------------------------------------------------------------
 -- Storage: bucket لتخزين صور الأدوية / الفريق / المقالات الصحية
 -- ----------------------------------------------------------------
 
-insert into storage.buckets (id, name, public)
-values ('images', 'images', true)
-on conflict (id) do nothing;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'images',
+  'images',
+  true,
+  2097152,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set
+  file_size_limit = 2097152,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
 
 create policy "public read images bucket" on storage.objects for select
   using (bucket_id = 'images');
 
 create policy "admin upload images bucket" on storage.objects for insert
-  with check (bucket_id = 'images' and auth.role() = 'authenticated');
+  with check (bucket_id = 'images' and public.is_admin());
 
 create policy "admin update images bucket" on storage.objects for update
-  using (bucket_id = 'images' and auth.role() = 'authenticated');
+  using (bucket_id = 'images' and public.is_admin());
 
 create policy "admin delete images bucket" on storage.objects for delete
-  using (bucket_id = 'images' and auth.role() = 'authenticated');
+  using (bucket_id = 'images' and public.is_admin());

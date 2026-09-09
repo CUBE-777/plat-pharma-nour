@@ -1,29 +1,43 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLang } from '../../i18n/LanguageContext'
 import { useData } from '../../context/DataContext'
 import { MultiLangInput } from '../../components/admin/MultiLangField'
 import ImageUploadField from '../../components/admin/ImageUploadField'
 import { DAY_ORDER } from '../../utils/pharmacyStatus'
 
-const DAY_LABEL = { sun: 'Sunday', mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday' }
-
 export default function AdminPharmacyInfo() {
   const { t } = useLang()
   const { pharmacyInfo, updatePharmacyInfo } = useData()
-  const [form, setForm] = useState(pharmacyInfo)
+  const [form, setForm] = useState(() => pharmacyInfo || { openingHours: {}, images: [] })
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    if (pharmacyInfo) {
+      setForm(pharmacyInfo)
+    }
+  }, [pharmacyInfo])
 
   function update(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
   }
   function updateHours(day, patch) {
-    setForm((f) => ({ ...f, openingHours: { ...f.openingHours, [day]: { ...f.openingHours[day], ...patch } } }))
+    setForm((f) => {
+      const currentHours = f.openingHours || {}
+      const dayHours = currentHours[day] || { closed: false, open: '08:30', close: '20:30' }
+      return {
+        ...f,
+        openingHours: {
+          ...currentHours,
+          [day]: { ...dayHours, ...patch },
+        },
+      }
+    })
   }
   function updateImage(index, value) {
     setForm((f) => {
-      const images = [...f.images]
+      const images = [...(f.images || [])]
       images[index] = value
       return { ...f, images }
     })
@@ -91,28 +105,31 @@ export default function AdminPharmacyInfo() {
 
         <div className="card card-pad">
           <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 16 }}>{t('status.hours')}</h3>
-          {DAY_ORDER.map((d) => (
-            <div key={d} className="flex-center gap-3" style={{ justifyContent: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-              <span style={{ width: 90, fontWeight: 700, fontSize: 13.5 }}>{DAY_LABEL[d]}</span>
-              <label className="flex-center gap-1" style={{ fontSize: 12.5 }}>
-                <input type="checkbox" checked={!form.openingHours[d].closed} onChange={(e) => updateHours(d, { closed: !e.target.checked })} />
-                {t('common.active')}
-              </label>
-              {!form.openingHours[d].closed && (
-                <>
-                  <input type="time" className="input" style={{ width: 130 }} value={form.openingHours[d].open} onChange={(e) => updateHours(d, { open: e.target.value })} />
-                  <span className="text-muted">—</span>
-                  <input type="time" className="input" style={{ width: 130 }} value={form.openingHours[d].close} onChange={(e) => updateHours(d, { close: e.target.value })} />
-                </>
-              )}
-            </div>
-          ))}
+          {DAY_ORDER.map((d) => {
+            const dayData = (form?.openingHours && form.openingHours[d]) || { closed: false, open: '08:30', close: '20:30' }
+            return (
+              <div key={d} className="flex-center gap-3" style={{ justifyContent: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                <span style={{ width: 100, fontWeight: 700, fontSize: 13.5 }}>{t('days.' + d)}</span>
+                <label className="flex-center gap-1" style={{ fontSize: 12.5 }}>
+                  <input type="checkbox" checked={!dayData.closed} onChange={(e) => updateHours(d, { closed: !e.target.checked })} />
+                  {t('common.active')}
+                </label>
+                {!dayData.closed && (
+                  <>
+                    <input type="time" className="input" style={{ width: 130 }} value={dayData.open || ''} onChange={(e) => updateHours(d, { open: e.target.value })} />
+                    <span className="text-muted">—</span>
+                    <input type="time" className="input" style={{ width: 130 }} value={dayData.close || ''} onChange={(e) => updateHours(d, { close: e.target.value })} />
+                  </>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         <div className="card card-pad">
-          <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 16 }}>Photos</h3>
-          {form.images.map((img, i) => (
-            <ImageUploadField key={i} label={`صورة ${i + 1}`} value={img} onChange={(v) => updateImage(i, v)} />
+          <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 16 }}>{t('admin.photoNumber')}</h3>
+          {(form?.images || []).map((img, i) => (
+            <ImageUploadField key={i} label={`${t('admin.photoNumber')} ${i + 1}`} value={img} onChange={(v) => updateImage(i, v)} />
           ))}
         </div>
 

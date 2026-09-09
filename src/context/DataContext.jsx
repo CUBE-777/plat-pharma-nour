@@ -38,21 +38,27 @@ async function fetchAll() {
     api.getHealthGuides(),
   ])
 
-  const firstError = [
-    pharmacyInfoRes,
-    categoriesRes,
-    medicinesRes,
-    servicesRes,
-    staffRes,
-    announcementsRes,
-    guideCategoriesRes,
-    healthGuidesRes,
-  ].find((r) => r.error)
+  // إذا فشل الاستعلام الأساسي معاً فهذا يعني انقطاع الاتصال بقاعدة البيانات
+  if (pharmacyInfoRes.error && medicinesRes.error) {
+    throw pharmacyInfoRes.error || medicinesRes.error
+  }
 
-  if (firstError) throw firstError.error
+  // تسجيل تحذيرات للجداول التي تعذر جلبها دون تعطيل باقي الموقع
+  const subQueries = [
+    { name: 'categories', res: categoriesRes },
+    { name: 'medicines', res: medicinesRes },
+    { name: 'services', res: servicesRes },
+    { name: 'staff', res: staffRes },
+    { name: 'announcements', res: announcementsRes },
+    { name: 'guideCategories', res: guideCategoriesRes },
+    { name: 'healthGuides', res: healthGuidesRes },
+  ]
+  subQueries.forEach(({ name, res }) => {
+    if (res.error) console.warn(`[DataContext] تعذر تحميل ${name}:`, res.error)
+  })
 
   return {
-    pharmacyInfo: pharmacyInfoRes.data,
+    pharmacyInfo: pharmacyInfoRes.data || null,
     categories: categoriesRes.data || [],
     medicines: medicinesRes.data || [],
     services: servicesRes.data || [],

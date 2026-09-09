@@ -4,6 +4,12 @@ import { useData } from '../context/DataContext'
 import { DAY_ORDER } from '../utils/pharmacyStatus'
 import * as api from '../services/api'
 
+const DAY_LABEL = {
+  ar: { sun: 'الأحد', mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت' },
+  fr: { sun: 'Dimanche', mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi' },
+  en: { sun: 'Sunday', mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday' },
+}
+
 export default function Contact() {
   const { t, tf, lang } = useLang()
   const { pharmacyInfo } = useData()
@@ -12,8 +18,11 @@ export default function Contact() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
 
-  const whatsappLink = `https://wa.me/${pharmacyInfo.whatsapp.replace(/[^0-9]/g, '')}`
-  const telLink = `tel:${pharmacyInfo.phone.replace(/[^0-9+]/g, '')}`
+  const cleanWhatsapp = (pharmacyInfo?.whatsapp || '').replace(/[^0-9]/g, '')
+  const whatsappLink = cleanWhatsapp ? `https://wa.me/${cleanWhatsapp}` : '#'
+  const cleanPhone = (pharmacyInfo?.phone || '').replace(/[^0-9+]/g, '')
+  const telLink = cleanPhone ? `tel:${cleanPhone}` : '#'
+  const hours = pharmacyInfo?.openingHours || {}
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -75,11 +84,11 @@ export default function Contact() {
             <div className="card card-pad">
               <div className="text-muted" style={{ fontSize: 12, marginBottom: 10 }}>{t('contact.workingHours')}</div>
               {DAY_ORDER.map((d) => {
-                const day = pharmacyInfo.openingHours[d]
+                const day = hours[d] || { closed: true, open: '', close: '' }
                 return (
                   <div key={d} className="flex-between" style={{ padding: '4px 0', fontSize: 12.5 }}>
-                    <span className="text-secondary" style={{ textTransform: 'capitalize' }}>{d}</span>
-                    <span style={{ fontWeight: 700 }}>{day.closed ? '—' : `${day.open} - ${day.close}`}</span>
+                    <span className="text-secondary">{DAY_LABEL[lang]?.[d] || d}</span>
+                    <span style={{ fontWeight: 700 }}>{day.closed || !day.open ? '—' : `${day.open} - ${day.close}`}</span>
                   </div>
                 )
               })}

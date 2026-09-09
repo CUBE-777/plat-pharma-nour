@@ -5,17 +5,25 @@ export function getPharmacyStatus(openingHours) {
   const dayKey = DAY_KEYS[now.getDay()]
   const today = openingHours?.[dayKey]
 
-  if (!today || today.closed) {
+  if (!today || today.closed || !today.open || !today.close) {
     return { isOpen: false, today }
   }
 
-  const [openH, openM] = today.open.split(':').map(Number)
-  const [closeH, closeM] = today.close.split(':').map(Number)
-  const openMinutes = openH * 60 + openM
-  const closeMinutes = closeH * 60 + closeM
+  const openParts = String(today.open).split(':').map(Number)
+  const closeParts = String(today.close).split(':').map(Number)
+  if (openParts.length < 2 || closeParts.length < 2 || isNaN(openParts[0]) || isNaN(closeParts[0])) {
+    return { isOpen: false, today }
+  }
+
+  const openMinutes = openParts[0] * 60 + (openParts[1] || 0)
+  const closeMinutes = closeParts[0] * 60 + (closeParts[1] || 0)
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
-  const isOpen = nowMinutes >= openMinutes && nowMinutes <= closeMinutes
+  // Support overnight shifts (e.g. 20:00 to 02:00)
+  const isOpen = closeMinutes >= openMinutes
+    ? nowMinutes >= openMinutes && nowMinutes <= closeMinutes
+    : nowMinutes >= openMinutes || nowMinutes <= closeMinutes
+
   return { isOpen, today }
 }
 

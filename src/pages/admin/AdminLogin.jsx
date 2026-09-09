@@ -9,7 +9,7 @@ export default function AdminLogin() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   if (checking) return null
@@ -18,11 +18,14 @@ export default function AdminLogin() {
   async function handleSubmit(e) {
     e.preventDefault()
     setSubmitting(true)
-    setError(false)
-    const ok = await login(email, password)
+    setErrorMsg('')
+    const res = await login(email, password)
     setSubmitting(false)
-    if (ok) navigate('/admin/dashboard')
-    else setError(true)
+    if (res?.ok) {
+      navigate('/admin/dashboard')
+    } else {
+      setErrorMsg(res?.error || t('admin.wrongCreds'))
+    }
   }
 
   return (
@@ -62,8 +65,8 @@ export default function AdminLogin() {
               placeholder="••••••••"
             />
           </div>
-          {error && (
-            <p style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 14, fontWeight: 600 }}>{t('admin.wrongCreds')}</p>
+          {errorMsg && (
+            <p style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 14, fontWeight: 600 }}>{errorMsg}</p>
           )}
           <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
             {submitting ? '...' : t('admin.login')}

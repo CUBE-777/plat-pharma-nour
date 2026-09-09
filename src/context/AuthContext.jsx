@@ -5,33 +5,84 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [checking, setChecking] = useState(true)
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setChecking(false)
-    })
+  const verifyAdmin = useCallback(async (user) => {
+    if (!user) {
+      setIsAdmin(false)
+      return false
+    }
+    try {
+      const { data, error } = await supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession)
-    })
-
-    return () => {
-      listener.subscription.unsubscribe()
+      // إذا وُجد في جدول admins
+      if (!error && data) {
+        setIsAdmin(true)
+        return true
+      }
+      // إذا كان الجدول غير منشأ بعد (قبل تشغيل security_patch)، نعتمد على وجود جلسة مصادقة
+      if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        setIsAdmin(true)
+        return true
+      }
+      // التحقق من دور المستخدم في البيانات الوصفية (app_metadata / user_metadata)
+      if (user.app_metadata?.role === 'admin' || user.user_metadata?.role === 'admin') {
+        setIsAdmin(true)
+        return true
+      }
+      setIsAdmin(false)
+      return false
+    } catch {
+      setIsAdmin(false)
+      return false
     }
   }, [])
 
-  const login = useCallback(async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return false
-    setSession(data.session)
-    return true
-  }, [])
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      setSession(data.session)
+      if (data.session?.user) {
+        await verifyAdmin(data.session.user)
+      }
+      setChecking(false)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      setSession(newSession)
+      if (newSession?.user) {
+        await verifyAdmin(newSession.user)
+      } else {
+        setIsAdmin(false)
+      }
+    })
+
+    return () => {
+      listener?.subscription?.unsubscribe?.()
+    }
+  }, [verifyAdmin])
+
+  const login = useCallback(
+    async (email, password) => {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        return { ok: false, error: error.message }
+      }
+      setSession(data.session)
+      const isAdm = await verifyAdmin(data.session?.user)
+      return { ok: true, isAdmin: isAdm }
+    },
+    [verifyAdmin]
+  )
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut()
     setSession(null)
+    setIsAdmin(false)
   }, [])
 
   const changePassword = useCallback(async (newPassword) => {
@@ -41,6 +92,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     isAuthed: !!session,
+    isAdmin,
     checking,
     user: session?.user || null,
     login,

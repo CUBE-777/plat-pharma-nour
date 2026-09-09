@@ -75,6 +75,19 @@ drop policy if exists "admin write guide_categories" on public.guide_categories;
 create policy "admin write guide_categories" on public.guide_categories for all
   using (public.is_admin()) with check (public.is_admin());
 
+-- تأمين جدول الرسائل (messages): القراءة/التعديل/الحذف محصورة بـ is_admin()
+drop policy if exists "admin read messages" on public.messages;
+create policy "admin read messages" on public.messages for select
+  using (public.is_admin());
+
+drop policy if exists "admin update messages" on public.messages;
+create policy "admin update messages" on public.messages for update
+  using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "admin delete messages" on public.messages;
+create policy "admin delete messages" on public.messages for delete
+  using (public.is_admin());
+
 -- ----------------------------------------------------------------
 -- 4) تأمين Storage: حجم/نوع الملفات على مستوى الـ bucket + سياسات is_admin()
 -- ----------------------------------------------------------------

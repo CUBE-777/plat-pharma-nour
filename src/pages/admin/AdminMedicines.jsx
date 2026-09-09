@@ -28,7 +28,7 @@ const EMPTY = {
 }
 
 export default function AdminMedicines() {
-  const { t, tf } = useLang()
+  const { t, tf, dir } = useLang()
   const { medicines, categories, medicinesCrud } = useData()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -95,7 +95,17 @@ export default function AdminMedicines() {
     setForm((f) => ({ ...f, info: { ...f.info, [field]: value } }))
   }
 
-  const filtered = medicines.filter((m) => m.name.toLowerCase().includes(query.toLowerCase()))
+  const filtered = medicines.filter((m) => {
+    if (!query.trim()) return true
+    const q = query.trim().toLowerCase()
+    const nameMatch = m.name.toLowerCase().includes(q)
+    const ingredientMatch = m.activeIngredient && (
+      typeof m.activeIngredient === 'string'
+        ? m.activeIngredient.toLowerCase().includes(q)
+        : Object.values(m.activeIngredient).some((val) => typeof val === 'string' && val.toLowerCase().includes(q))
+    )
+    return nameMatch || ingredientMatch
+  })
 
   return (
     <div>
@@ -108,7 +118,7 @@ export default function AdminMedicines() {
         <div className="card card-pad" style={{ marginBottom: 18, borderColor: 'color-mix(in srgb, var(--warning) 40%, var(--border))' }}>
           <p style={{ fontSize: 13.5, fontWeight: 600, margin: 0 }}>⚠️ {t('admin.noCategoriesWarning')}</p>
           <Link to="/admin/categories" className="btn btn-sm btn-secondary" style={{ marginTop: 10, display: 'inline-flex' }}>
-            {t('admin.goToCategories')} →
+            {t('admin.goToCategories')} {dir === 'rtl' ? '←' : '→'}
           </Link>
         </div>
       )}
