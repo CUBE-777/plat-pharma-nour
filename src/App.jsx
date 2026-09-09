@@ -33,16 +33,30 @@ export default function App() {
         style={{
           minHeight: '100vh',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           background: '#0b0f14',
           color: '#fff',
-          fontSize: 15,
-          fontWeight: 600,
-          gap: 10,
+          gap: 12,
         }}
       >
-        جاري تحميل البيانات...
+        <div
+          aria-label="جاري تحميل البيانات"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '3px solid rgba(255,255,255,0.15)',
+            borderTopColor: '#3b82f6',
+            animation: 'app-loading-spin 0.8s linear infinite',
+          }}
+        />
+        <style>{`
+          @keyframes app-loading-spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     )
   }

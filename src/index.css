@@ -222,6 +222,15 @@ input, textarea, select { font-family: inherit; }
 .textarea { resize: vertical; min-height: 96px; }
 .input::placeholder, .textarea::placeholder { color: var(--text-muted); opacity: 1; }
 
+/* المتصفحات (خصوصًا الجوال) تعرض قائمة خيارات <select> المنسدلة بخلفية بيضاء دائمًا،
+   بغض النظر عن ثيم الموقع الداكن. بدون هذه القاعدة، النص يرث لون var(--text-primary)
+   الفاتح من .select فيصبح أبيض على أبيض وغير مرئي. هذا لا يغيّر شكل القائمة نفسها
+   وهي مغلقة، فقط لون النص داخل الخيارات عند فتحها. */
+.select option {
+  color: #374151;
+  background: #fff;
+}
+
 /* ===================== Misc utility ===================== */
 .flex { display: flex; }
 .flex-center { display: flex; align-items: center; justify-content: center; }

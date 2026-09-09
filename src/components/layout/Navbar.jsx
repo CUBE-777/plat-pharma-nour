@@ -140,13 +140,10 @@ export default function Navbar() {
                   {l.label}
                 </NavLink>
               ))}
-              <Link
-                to="/admin"
-                onClick={() => setMobileOpen(false)}
-                style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', marginTop: 8 }}
-              >
-                ⚙ {t('nav.admin')}
-              </Link>
+              {/* رابط لوحة التحكم أُخفي عمدًا عن الزوار العاديين. مسار /admin
+                  يبقى يعمل بشكل طبيعي تمامًا — صاحب الصيدلية يصل إليه بكتابة
+                  الرابط مباشرة في المتصفح أو بحفظه (Bookmark). راجع شرح الاستخدام
+                  في ملاحظة التعليق أسفل الملف. */}
             </div>
           </div>
         </div>
