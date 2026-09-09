@@ -18,25 +18,50 @@ export default function AdminServices() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [rowError, setRowError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   function openAdd() {
     setEditing(null)
+    setFormError('')
     setForm(EMPTY)
     setModalOpen(true)
   }
   function openEdit(item) {
     setEditing(item)
+    setFormError('')
     setForm({ icon: item.icon, active: item.active, name: item.name, shortDesc: item.shortDesc, details: item.details })
     setModalOpen(true)
   }
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    if (editing) servicesCrud.update(editing.id, form)
-    else servicesCrud.add(form)
-    setModalOpen(false)
+    setFormError('')
+    setSaving(true)
+    try {
+      if (editing) await servicesCrud.update(editing.id, form)
+      else await servicesCrud.add(form)
+      setModalOpen(false)
+    } catch (err) {
+      console.error(err)
+      setFormError(t('admin.saveError'))
+    } finally {
+      setSaving(false)
+    }
   }
-  function handleDelete(id) {
-    if (window.confirm(t('admin.confirmDelete'))) servicesCrud.remove(id)
+  async function handleDelete(id) {
+    if (!window.confirm(t('admin.confirmDelete'))) return
+    setRowError('')
+    setDeletingId(id)
+    try {
+      await servicesCrud.remove(id)
+    } catch (err) {
+      console.error(err)
+      setRowError(t('admin.deleteError'))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -47,6 +72,7 @@ export default function AdminServices() {
       </div>
 
       <div className="grid grid-3">
+        {rowError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, gridColumn: '1 / -1' }}>{rowError}</p>}
         {services.map((s) => (
           <div key={s.id} className="card card-pad fade-up">
             <div className="flex-between" style={{ marginBottom: 12 }}>
@@ -62,7 +88,9 @@ export default function AdminServices() {
                 {s.active ? t('common.disable') : t('common.enable')}
               </button>
               <button className="btn btn-sm btn-secondary" onClick={() => openEdit(s)}>{t('common.edit')}</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s.id)}>{t('common.delete')}</button>
+              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s.id)} disabled={deletingId === s.id}>
+                {deletingId === s.id ? t('admin.deleting') : t('common.delete')}
+              </button>
             </div>
           </div>
         ))}
@@ -81,7 +109,10 @@ export default function AdminServices() {
             <input type="checkbox" checked={form.active} onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))} id="srv-active" />
             <label htmlFor="srv-active" style={{ margin: 0 }}>{t('common.active')}</label>
           </div>
-          <button type="submit" className="btn btn-primary btn-block">{t('common.save')}</button>
+          {formError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{formError}</p>}
+          <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
+            {saving ? t('admin.saving') : t('common.save')}
+          </button>
         </form>
       </Modal>
     </div>

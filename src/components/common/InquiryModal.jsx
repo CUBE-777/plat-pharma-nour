@@ -2,12 +2,15 @@ import { useState } from 'react'
 import Modal from './Modal'
 import { useLang } from '../../i18n/LanguageContext'
 import { useData } from '../../context/DataContext'
+import * as api from '../../services/api'
 
 export default function InquiryModal({ open, onClose, defaultMedicineName = '' }) {
   const { t } = useLang()
   const { medicines } = useData()
   const [form, setForm] = useState({ medicineName: defaultMedicineName, quantity: 1, message: '', phone: '' })
   const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
 
   function update(key, val) {
     setForm((f) => ({ ...f, [key]: val }))
@@ -15,13 +18,25 @@ export default function InquiryModal({ open, onClose, defaultMedicineName = '' }
 
   function handleClose() {
     setSent(false)
+    setError('')
     setForm({ medicineName: '', quantity: 1, message: '', phone: '' })
     onClose()
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    setSent(true)
+    setError('')
+    setSending(true)
+    const { error: err } = await api.addMessage({
+      type: 'inquiry',
+      medicine_name: form.medicineName,
+      quantity: Number(form.quantity) || 1,
+      phone: form.phone,
+      message: form.message,
+    })
+    setSending(false)
+    if (err) setError(t('inquiry.sendError'))
+    else setSent(true)
   }
 
   return (
@@ -85,9 +100,10 @@ export default function InquiryModal({ open, onClose, defaultMedicineName = '' }
               onChange={(e) => update('message', e.target.value)}
             />
           </div>
-          <button type="submit" className="btn btn-primary btn-block">
-            {t('inquiry.sendInquiry')}
+          <button type="submit" className="btn btn-primary btn-block" disabled={sending}>
+            {sending ? t('common.sending') : t('inquiry.sendInquiry')}
           </button>
+          {error && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginTop: 10 }}>{error}</p>}
         </form>
       )}
     </Modal>

@@ -2,19 +2,32 @@ import { useState } from 'react'
 import { useLang } from '../i18n/LanguageContext'
 import { useData } from '../context/DataContext'
 import { DAY_ORDER } from '../utils/pharmacyStatus'
+import * as api from '../services/api'
 
 export default function Contact() {
   const { t, tf, lang } = useLang()
   const { pharmacyInfo } = useData()
   const [form, setForm] = useState({ name: '', email: '', message: '' })
   const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
 
   const whatsappLink = `https://wa.me/${pharmacyInfo.whatsapp.replace(/[^0-9]/g, '')}`
   const telLink = `tel:${pharmacyInfo.phone.replace(/[^0-9+]/g, '')}`
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    setSent(true)
+    setError('')
+    setSending(true)
+    const { error: err } = await api.addMessage({
+      type: 'contact',
+      name: form.name,
+      email: form.email,
+      message: form.message,
+    })
+    setSending(false)
+    if (err) setError(t('contact.sendError'))
+    else setSent(true)
   }
 
   return (
@@ -112,7 +125,10 @@ export default function Contact() {
                     <label>{t('common.message')}</label>
                     <textarea className="textarea" required value={form.message} onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))} />
                   </div>
-                  <button type="submit" className="btn btn-primary btn-block">{t('common.submit')}</button>
+                  {error && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{error}</p>}
+                  <button type="submit" className="btn btn-primary btn-block" disabled={sending}>
+                    {sending ? t('common.sending') : t('common.submit')}
+                  </button>
                 </form>
               )}
             </div>

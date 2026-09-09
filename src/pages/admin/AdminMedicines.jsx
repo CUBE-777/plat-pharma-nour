@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useLang } from '../../i18n/LanguageContext'
 import { useData } from '../../context/DataContext'
 import Modal from '../../components/common/Modal'
@@ -33,14 +34,20 @@ export default function AdminMedicines() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY)
   const [query, setQuery] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [rowError, setRowError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   function openAdd() {
     setEditing(null)
+    setFormError('')
     setForm({ ...EMPTY, categoryId: categories[0]?.id || '' })
     setModalOpen(true)
   }
   function openEdit(item) {
     setEditing(item)
+    setFormError('')
     setForm({
       name: item.name,
       categoryId: item.categoryId,
@@ -54,15 +61,34 @@ export default function AdminMedicines() {
     })
     setModalOpen(true)
   }
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    const payload = { ...form, price: Number(form.price) || 0 }
-    if (editing) medicinesCrud.update(editing.id, payload)
-    else medicinesCrud.add(payload)
-    setModalOpen(false)
+    setFormError('')
+    setSaving(true)
+    try {
+      const payload = { ...form, price: Number(form.price) || 0 }
+      if (editing) await medicinesCrud.update(editing.id, payload)
+      else await medicinesCrud.add(payload)
+      setModalOpen(false)
+    } catch (err) {
+      console.error(err)
+      setFormError(t('admin.saveError'))
+    } finally {
+      setSaving(false)
+    }
   }
-  function handleDelete(id) {
-    if (window.confirm(t('admin.confirmDelete'))) medicinesCrud.remove(id)
+  async function handleDelete(id) {
+    if (!window.confirm(t('admin.confirmDelete'))) return
+    setRowError('')
+    setDeletingId(id)
+    try {
+      await medicinesCrud.remove(id)
+    } catch (err) {
+      console.error(err)
+      setRowError(t('admin.deleteError'))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   function updateInfo(field, value) {
@@ -75,8 +101,21 @@ export default function AdminMedicines() {
     <div>
       <div className="flex-between" style={{ marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>{t('admin.manageMedicines')}</h1>
-        <button className="btn btn-primary" onClick={openAdd}>+ {t('admin.addNew')}</button>
+        <button className="btn btn-primary" onClick={openAdd} disabled={categories.length === 0}>+ {t('admin.addNew')}</button>
       </div>
+
+      {categories.length === 0 && (
+        <div className="card card-pad" style={{ marginBottom: 18, borderColor: 'color-mix(in srgb, var(--warning) 40%, var(--border))' }}>
+          <p style={{ fontSize: 13.5, fontWeight: 600, margin: 0 }}>⚠️ {t('admin.noCategoriesWarning')}</p>
+          <Link to="/admin/categories" className="btn btn-sm btn-secondary" style={{ marginTop: 10, display: 'inline-flex' }}>
+            {t('admin.goToCategories')} →
+          </Link>
+        </div>
+      )}
+
+      {rowError && (
+        <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{rowError}</p>
+      )}
 
       <input
         className="input"
@@ -112,7 +151,9 @@ export default function AdminMedicines() {
                   <td style={{ padding: '12px 16px' }}>
                     <div className="flex-center gap-2">
                       <button className="btn btn-sm btn-secondary" onClick={() => openEdit(m)}>{t('common.edit')}</button>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(m.id)}>{t('common.delete')}</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(m.id)} disabled={deletingId === m.id}>
+                        {deletingId === m.id ? t('admin.deleting') : t('common.delete')}
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -171,7 +212,10 @@ export default function AdminMedicines() {
           <MultiLangInput label={t('medicines.contraindications')} value={form.info.contraindications} onChange={(v) => updateInfo('contraindications', v)} textarea />
           <MultiLangInput label={t('medicines.sideEffects')} value={form.info.sideEffects} onChange={(v) => updateInfo('sideEffects', v)} textarea />
 
-          <button type="submit" className="btn btn-primary btn-block">{t('common.save')}</button>
+          {formError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{formError}</p>}
+          <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
+            {saving ? t('admin.saving') : t('common.save')}
+          </button>
         </form>
       </Modal>
     </div>

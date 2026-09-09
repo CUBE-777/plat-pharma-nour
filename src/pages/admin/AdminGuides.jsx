@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useLang } from '../../i18n/LanguageContext'
 import { useData } from '../../context/DataContext'
 import Modal from '../../components/common/Modal'
@@ -23,14 +24,20 @@ export default function AdminGuides() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [rowError, setRowError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   function openAdd() {
     setEditing(null)
+    setFormError('')
     setForm({ ...EMPTY, categoryId: guideCategories[0]?.id || '' })
     setModalOpen(true)
   }
   function openEdit(item) {
     setEditing(item)
+    setFormError('')
     setForm({
       categoryId: item.categoryId,
       active: item.active,
@@ -51,23 +58,53 @@ export default function AdminGuides() {
     }
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    const payload = { ...form, keyPoints: cleanList(form.keyPoints), tips: cleanList(form.tips) }
-    if (editing) healthGuidesCrud.update(editing.id, payload)
-    else healthGuidesCrud.add(payload)
-    setModalOpen(false)
+    setFormError('')
+    setSaving(true)
+    try {
+      const payload = { ...form, keyPoints: cleanList(form.keyPoints), tips: cleanList(form.tips) }
+      if (editing) await healthGuidesCrud.update(editing.id, payload)
+      else await healthGuidesCrud.add(payload)
+      setModalOpen(false)
+    } catch (err) {
+      console.error(err)
+      setFormError(t('admin.saveError'))
+    } finally {
+      setSaving(false)
+    }
   }
-  function handleDelete(id) {
-    if (window.confirm(t('admin.confirmDelete'))) healthGuidesCrud.remove(id)
+  async function handleDelete(id) {
+    if (!window.confirm(t('admin.confirmDelete'))) return
+    setRowError('')
+    setDeletingId(id)
+    try {
+      await healthGuidesCrud.remove(id)
+    } catch (err) {
+      console.error(err)
+      setRowError(t('admin.deleteError'))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
     <div>
       <div className="flex-between" style={{ marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>{t('admin.manageGuides')}</h1>
-        <button className="btn btn-primary" onClick={openAdd}>+ {t('admin.addNew')}</button>
+        <button className="btn btn-primary" onClick={openAdd} disabled={guideCategories.length === 0}>+ {t('admin.addNew')}</button>
       </div>
+
+      {guideCategories.length === 0 && (
+        <div className="card card-pad" style={{ marginBottom: 18, borderColor: 'color-mix(in srgb, var(--warning) 40%, var(--border))' }}>
+          <p style={{ fontSize: 13.5, fontWeight: 600, margin: 0 }}>⚠️ {t('admin.noGuideCategoriesWarning')}</p>
+          <Link to="/admin/categories" className="btn btn-sm btn-secondary" style={{ marginTop: 10, display: 'inline-flex' }}>
+            {t('admin.goToCategories')} →
+          </Link>
+        </div>
+      )}
+
+      {rowError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{rowError}</p>}
 
       <div className="grid grid-3">
         {healthGuides.map((g) => {
@@ -90,7 +127,9 @@ export default function AdminGuides() {
                     {g.active ? t('common.disable') : t('common.enable')}
                   </button>
                   <button className="btn btn-sm btn-secondary" onClick={() => openEdit(g)}>{t('common.edit')}</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(g.id)}>{t('common.delete')}</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(g.id)} disabled={deletingId === g.id}>
+                    {deletingId === g.id ? t('admin.deleting') : t('common.delete')}
+                  </button>
                 </div>
               </div>
             </div>
@@ -117,7 +156,10 @@ export default function AdminGuides() {
             <input type="checkbox" checked={form.active} onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))} id="guide-active" />
             <label htmlFor="guide-active" style={{ margin: 0 }}>{t('common.active')}</label>
           </div>
-          <button type="submit" className="btn btn-primary btn-block">{t('common.save')}</button>
+          {formError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{formError}</p>}
+          <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
+            {saving ? t('admin.saving') : t('common.save')}
+          </button>
         </form>
       </Modal>
     </div>

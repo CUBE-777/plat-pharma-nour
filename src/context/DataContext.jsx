@@ -149,6 +149,8 @@ export function DataProvider({ children }) {
   const staffCrud = useMemo(() => makeCrud('staff', 'staff'), [makeCrud])
   const announcementsCrud = useMemo(() => makeCrud('announcements', 'announcements'), [makeCrud])
   const healthGuidesCrud = useMemo(() => makeCrud('health_guides', 'healthGuides'), [makeCrud])
+  const categoriesCrud = useMemo(() => makeCrud('categories', 'categories'), [makeCrud])
+  const guideCategoriesCrud = useMemo(() => makeCrud('guide_categories', 'guideCategories'), [makeCrud])
 
   const updatePharmacyInfo = useCallback(async (patch) => {
     const { data: updated, error: err } = await supabase
@@ -177,6 +179,8 @@ export function DataProvider({ children }) {
       staffCrud,
       announcementsCrud,
       healthGuidesCrud,
+      categoriesCrud,
+      guideCategoriesCrud,
       updatePharmacyInfo,
     }),
     [
@@ -189,6 +193,8 @@ export function DataProvider({ children }) {
       staffCrud,
       announcementsCrud,
       healthGuidesCrud,
+      categoriesCrud,
+      guideCategoriesCrud,
       updatePharmacyInfo,
     ]
   )

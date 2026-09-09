@@ -74,6 +74,22 @@ create table if not exists public.health_guides (
   created_at timestamptz not null default now()
 );
 
+-- رسائل واردة من 3 نماذج فـ الموقع العمومي: تواصل معنا (Contact)،
+-- استفسار عن دواء (InquiryModal)، اسأل الصيدلي (AskPharmacistModal).
+-- عمود "type" كيميز مصدر الرسالة، وباقي الأعمدة اختيارية حسب النموذج.
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type in ('contact', 'inquiry', 'ask_pharmacist')),
+  status text not null default 'new' check (status in ('new', 'read')),
+  name text,
+  email text,
+  phone text,
+  medicine_name text,
+  quantity integer,
+  message text,
+  created_at timestamptz not null default now()
+);
+
 -- صف واحد فقط (id ثابت = 1) لمعلومات الصيدلية العامة
 create table if not exists public.pharmacy_info (
   id integer primary key default 1,
@@ -133,6 +149,7 @@ alter table public.staff enable row level security;
 alter table public.announcements enable row level security;
 alter table public.health_guides enable row level security;
 alter table public.pharmacy_info enable row level security;
+alter table public.messages enable row level security;
 
 -- قراءة عمومية (public read) لكل الجداول
 create policy "public read categories" on public.categories for select using (true);
@@ -161,6 +178,17 @@ create policy "admin write categories" on public.categories for all
   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "admin write guide_categories" on public.guide_categories for all
   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- messages: أي زائر (حتى غير المسجّل) يقدر "يكتب" رسالة (insert) عبر
+-- نماذج الموقع، لكن القراءة/التعديل/الحذف محصورة بالإدارة فقط — حماية
+-- لخصوصية بيانات الزوار (هاتف/بريد/رسالة).
+create policy "public insert messages" on public.messages for insert with check (true);
+create policy "admin read messages" on public.messages for select
+  using (auth.role() = 'authenticated');
+create policy "admin update messages" on public.messages for update
+  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "admin delete messages" on public.messages for delete
+  using (auth.role() = 'authenticated');
 
 -- ----------------------------------------------------------------
 -- Storage: bucket لتخزين صور الأدوية / الفريق / المقالات الصحية

@@ -1,8 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLang } from '../../i18n/LanguageContext'
+
+let modalIdCounter = 0
 
 export default function Modal({ open, onClose, title, children, maxWidth = 480 }) {
   const { t } = useLang()
+  const dialogRef = useRef(null)
+  const titleIdRef = useRef(`modal-title-${++modalIdCounter}`)
 
   useEffect(() => {
     if (!open) return
@@ -14,6 +18,20 @@ export default function Modal({ open, onClose, title, children, maxWidth = 480 }
       document.body.style.overflow = ''
     }
   }, [open, onClose])
+
+  // نقل التركيز (focus) تلقائيًا لأول عنصر قابل للتفاعل داخل النافذة عند
+  // فتحها — ضروري لمستخدمي قارئ الشاشة ولوحة المفاتيح، حتى لا يبقى التركيز
+  // "ضائعًا" خلف النافذة المنبثقة.
+  useEffect(() => {
+    if (!open) return
+    const focusable = dialogRef.current?.querySelector(
+      'input, textarea, select, button, [href], [tabindex]:not([tabindex="-1"])'
+    )
+    const target = focusable || dialogRef.current
+    // requestAnimationFrame يضمن أن العنصر أصبح موجودًا فعليًا فـ DOM (بعد fade-up)
+    const raf = requestAnimationFrame(() => target?.focus())
+    return () => cancelAnimationFrame(raf)
+  }, [open])
 
   if (!open) return null
 
@@ -33,6 +51,11 @@ export default function Modal({ open, onClose, title, children, maxWidth = 480 }
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleIdRef.current}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className="glass fade-up"
         style={{
@@ -47,7 +70,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = 480 }
         }}
       >
         <div className="flex-between" style={{ marginBottom: 18 }}>
-          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{title}</h3>
+          <h3 id={titleIdRef.current} style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{title}</h3>
           <button className="icon-btn" onClick={onClose} aria-label={t('common.close')}>✕</button>
         </div>
         {children}

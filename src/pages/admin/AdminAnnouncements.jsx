@@ -12,25 +12,50 @@ export default function AdminAnnouncements() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [rowError, setRowError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   function openAdd() {
     setEditing(null)
+    setFormError('')
     setForm(EMPTY)
     setModalOpen(true)
   }
   function openEdit(item) {
     setEditing(item)
+    setFormError('')
     setForm({ icon: item.icon, text: item.text, active: item.active })
     setModalOpen(true)
   }
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    if (editing) announcementsCrud.update(editing.id, form)
-    else announcementsCrud.add(form)
-    setModalOpen(false)
+    setFormError('')
+    setSaving(true)
+    try {
+      if (editing) await announcementsCrud.update(editing.id, form)
+      else await announcementsCrud.add(form)
+      setModalOpen(false)
+    } catch (err) {
+      console.error(err)
+      setFormError(t('admin.saveError'))
+    } finally {
+      setSaving(false)
+    }
   }
-  function handleDelete(id) {
-    if (window.confirm(t('admin.confirmDelete'))) announcementsCrud.remove(id)
+  async function handleDelete(id) {
+    if (!window.confirm(t('admin.confirmDelete'))) return
+    setRowError('')
+    setDeletingId(id)
+    try {
+      await announcementsCrud.remove(id)
+    } catch (err) {
+      console.error(err)
+      setRowError(t('admin.deleteError'))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -43,6 +68,7 @@ export default function AdminAnnouncements() {
       </div>
 
       <div className="flex-col gap-3">
+        {rowError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600 }}>{rowError}</p>}
         {announcements.map((a) => (
           <div key={a.id} className="card card-pad flex-between fade-up" style={{ flexWrap: 'wrap', gap: 12 }}>
             <div className="flex-center gap-3" style={{ justifyContent: 'flex-start' }}>
@@ -57,7 +83,9 @@ export default function AdminAnnouncements() {
                 {a.active ? t('common.disable') : t('common.enable')}
               </button>
               <button className="btn btn-sm btn-secondary" onClick={() => openEdit(a)}>{t('common.edit')}</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(a.id)}>{t('common.delete')}</button>
+              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(a.id)} disabled={deletingId === a.id}>
+                {deletingId === a.id ? t('admin.deleting') : t('common.delete')}
+              </button>
             </div>
           </div>
         ))}
@@ -75,7 +103,10 @@ export default function AdminAnnouncements() {
             <input type="checkbox" checked={form.active} onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))} id="ann-active" />
             <label htmlFor="ann-active" style={{ margin: 0 }}>{t('common.active')}</label>
           </div>
-          <button type="submit" className="btn btn-primary btn-block">{t('common.save')}</button>
+          {formError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{formError}</p>}
+          <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
+            {saving ? t('admin.saving') : t('common.save')}
+          </button>
         </form>
       </Modal>
     </div>

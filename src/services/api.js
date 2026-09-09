@@ -140,3 +140,36 @@ export function updateHealthGuide(id, patch) {
 export function deleteHealthGuide(id) {
   return safeQuery(supabase.from('health_guides').delete().eq('id', id), 'deleteHealthGuide')
 }
+
+// ----------------------------------------------------------------
+// الرسائل الواردة (Contact / Inquiry / Ask-a-Pharmacist forms)
+// ----------------------------------------------------------------
+// الزوار (anon) يقدرو غير "يكتبو" (insert) هاد الجدول، ماعندهمش صلاحية
+// القراءة (select) لحماية خصوصية المعلومات (رقم الهاتف، البريد...).
+// لهذا السبب addMessage ما كيديرش .select() بعد insert — الاستجابة غادي
+// تكون فارغة (data: null) حتى مع النجاح، والمهم هو عدم وجود error.
+
+export function addMessage(item) {
+  return safeQuery(supabase.from('messages').insert(item), 'addMessage')
+}
+
+// القراءة/التحديث/الحذف هنا محصورة بالإدارة (authenticated) عبر RLS —
+// تُستخدم فقط من AdminMessages.jsx.
+
+export function getMessages() {
+  return safeQuery(
+    supabase.from('messages').select('*').order('created_at', { ascending: false }),
+    'getMessages'
+  )
+}
+
+export function updateMessageStatus(id, status) {
+  return safeQuery(
+    supabase.from('messages').update({ status }).eq('id', id).select().single(),
+    'updateMessageStatus'
+  )
+}
+
+export function deleteMessage(id) {
+  return safeQuery(supabase.from('messages').delete().eq('id', id), 'deleteMessage')
+}

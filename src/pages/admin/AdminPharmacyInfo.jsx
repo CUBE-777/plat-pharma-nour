@@ -12,6 +12,8 @@ export default function AdminPharmacyInfo() {
   const { pharmacyInfo, updatePharmacyInfo } = useData()
   const [form, setForm] = useState(pharmacyInfo)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   function update(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -27,11 +29,20 @@ export default function AdminPharmacyInfo() {
     })
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    updatePharmacyInfo(form)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    setSaveError('')
+    setSaving(true)
+    try {
+      await updatePharmacyInfo(form)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      console.error(err)
+      setSaveError(t('admin.saveError'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -105,7 +116,10 @@ export default function AdminPharmacyInfo() {
           ))}
         </div>
 
-        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>{t('common.save')}</button>
+        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }} disabled={saving}>
+          {saving ? t('admin.saving') : t('common.save')}
+        </button>
+        {saveError && <span style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, alignSelf: 'flex-start' }}>{saveError}</span>}
         {saved && <span className="badge badge-success" style={{ alignSelf: 'flex-start' }}>✓ {t('admin.saved')}</span>}
       </form>
     </div>

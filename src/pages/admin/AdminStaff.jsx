@@ -18,25 +18,50 @@ export default function AdminStaff() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [rowError, setRowError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   function openAdd() {
     setEditing(null)
+    setFormError('')
     setForm(EMPTY)
     setModalOpen(true)
   }
   function openEdit(item) {
     setEditing(item)
+    setFormError('')
     setForm({ name: item.name, image: item.image, role: item.role, bio: item.bio })
     setModalOpen(true)
   }
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    if (editing) staffCrud.update(editing.id, form)
-    else staffCrud.add(form)
-    setModalOpen(false)
+    setFormError('')
+    setSaving(true)
+    try {
+      if (editing) await staffCrud.update(editing.id, form)
+      else await staffCrud.add(form)
+      setModalOpen(false)
+    } catch (err) {
+      console.error(err)
+      setFormError(t('admin.saveError'))
+    } finally {
+      setSaving(false)
+    }
   }
-  function handleDelete(id) {
-    if (window.confirm(t('admin.confirmDelete'))) staffCrud.remove(id)
+  async function handleDelete(id) {
+    if (!window.confirm(t('admin.confirmDelete'))) return
+    setRowError('')
+    setDeletingId(id)
+    try {
+      await staffCrud.remove(id)
+    } catch (err) {
+      console.error(err)
+      setRowError(t('admin.deleteError'))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -47,6 +72,7 @@ export default function AdminStaff() {
       </div>
 
       <div className="grid grid-4">
+        {rowError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, gridColumn: '1 / -1' }}>{rowError}</p>}
         {staff.map((s) => (
           <div key={s.id} className="card fade-up" style={{ overflow: 'hidden' }}>
             <div style={{ height: 140, overflow: 'hidden' }}>
@@ -57,7 +83,9 @@ export default function AdminStaff() {
               <div className="text-secondary" style={{ fontSize: 12.5, marginBottom: 12 }}>{tf(s.role)}</div>
               <div className="flex-center gap-2">
                 <button className="btn btn-sm btn-secondary" onClick={() => openEdit(s)}>{t('common.edit')}</button>
-                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s.id)}>{t('common.delete')}</button>
+                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s.id)} disabled={deletingId === s.id}>
+                  {deletingId === s.id ? t('admin.deleting') : t('common.delete')}
+                </button>
               </div>
             </div>
           </div>
@@ -73,7 +101,10 @@ export default function AdminStaff() {
           <ImageUploadField label="صورة الموظف" value={form.image} onChange={(v) => setForm((f) => ({ ...f, image: v }))} />
           <MultiLangInput label={t('team.title')} value={form.role} onChange={(role) => setForm((f) => ({ ...f, role }))} />
           <MultiLangInput label="Bio" value={form.bio} onChange={(bio) => setForm((f) => ({ ...f, bio }))} textarea />
-          <button type="submit" className="btn btn-primary btn-block">{t('common.save')}</button>
+          {formError && <p style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{formError}</p>}
+          <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
+            {saving ? t('admin.saving') : t('common.save')}
+          </button>
         </form>
       </Modal>
     </div>

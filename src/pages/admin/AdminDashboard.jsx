@@ -1,10 +1,24 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useLang } from '../../i18n/LanguageContext'
 import { useData } from '../../context/DataContext'
+import * as api from '../../services/api'
 
 export default function AdminDashboard() {
   const { t, tf } = useLang()
-  const { medicines, services, staff, healthGuides, announcements } = useData()
+  const { medicines, services, staff, healthGuides, announcements, categories, guideCategories } = useData()
+  const [newMessagesCount, setNewMessagesCount] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    api.getMessages().then(({ data, error }) => {
+      if (cancelled || error) return
+      setNewMessagesCount((data || []).filter((m) => m.status === 'new').length)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const stats = [
     { label: t('admin.totalMedicines'), value: medicines.length, icon: '💊', to: '/admin/medicines', color: 'var(--accent)' },
@@ -12,6 +26,8 @@ export default function AdminDashboard() {
     { label: t('admin.totalStaff'), value: staff.length, icon: '👥', to: '/admin/staff', color: 'var(--accent-3)' },
     { label: t('admin.totalGuides'), value: healthGuides.length, icon: '📘', to: '/admin/guides', color: 'var(--success)' },
     { label: t('admin.totalAnnouncements'), value: announcements.length, icon: '📢', to: '/admin/announcements', color: 'var(--warning)' },
+    { label: t('admin.totalCategories'), value: categories.length + guideCategories.length, icon: '🏷️', to: '/admin/categories', color: 'var(--accent)' },
+    { label: t('admin.newMessages'), value: newMessagesCount ?? '—', icon: '✉️', to: '/admin/messages', color: 'var(--danger, #ef4444)' },
   ]
 
   return (

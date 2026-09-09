@@ -17,6 +17,8 @@ export default function AdminLayout() {
     { to: '/admin/services', label: t('admin.manageServices'), icon: '🩺' },
     { to: '/admin/staff', label: t('admin.manageStaff'), icon: '👥' },
     { to: '/admin/guides', label: t('admin.manageGuides'), icon: '📘' },
+    { to: '/admin/categories', label: t('admin.manageCategories'), icon: '🏷️' },
+    { to: '/admin/messages', label: t('admin.manageMessages'), icon: '✉️' },
     { to: '/admin/pharmacy-info', label: t('admin.pharmacyInfo'), icon: '🏥' },
     { to: '/admin/settings', label: t('admin.settings'), icon: '⚙️' },
   ]

@@ -21,6 +21,8 @@ import AdminMedicines from './pages/admin/AdminMedicines'
 import AdminServices from './pages/admin/AdminServices'
 import AdminStaff from './pages/admin/AdminStaff'
 import AdminGuides from './pages/admin/AdminGuides'
+import AdminCategories from './pages/admin/AdminCategories'
+import AdminMessages from './pages/admin/AdminMessages'
 import AdminPharmacyInfo from './pages/admin/AdminPharmacyInfo'
 import AdminSettings from './pages/admin/AdminSettings'
 
@@ -167,6 +169,8 @@ export default function App() {
           <Route path="/admin/services" element={<AdminServices />} />
           <Route path="/admin/staff" element={<AdminStaff />} />
           <Route path="/admin/guides" element={<AdminGuides />} />
+          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/admin/pharmacy-info" element={<AdminPharmacyInfo />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
         </Route>
